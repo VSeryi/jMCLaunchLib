@@ -18,6 +18,31 @@ class MinecraftMaven extends Cache {
 	Path storage
 	boolean offline
 
+	File resolve(MavenIdentifier id, URL url) {
+		LOGGER.trace "Resolving dependency: $id.identifier in url $url"
+
+		def localPath = storage.resolve(id.path).toFile()
+
+		//Check if non pack.xz file exists
+		if (id.ext.endsWith(".pack.xz")) {
+			def jarPath = storage.resolve(id.copyWith(ext: id.ext.replaceAll('\\.pack\\.xz$', "")).path).toFile()
+			if (jarPath.exists()) {
+				return jarPath
+			}
+		}
+
+		if (!localPath.exists()) {
+
+			if (offline) throw new OfflineException("Cannot download $id.identifier")
+
+			localPath.parentFile.mkdirs()
+			LOGGER.info "Downloading $url"
+			localPath.bytes = url.bytes
+		}
+
+		localPath
+	}
+
 	File resolve(String identifier, String repo) {
 		resolve(MavenIdentifier.of(identifier), repo)
 	}

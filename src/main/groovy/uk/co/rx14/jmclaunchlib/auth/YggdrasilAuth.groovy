@@ -1,9 +1,9 @@
 package uk.co.rx14.jmclaunchlib.auth
 
-import com.mashape.unirest.http.HttpResponse
-import com.mashape.unirest.http.Unirest
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
+import kong.unirest.HttpResponse
+import kong.unirest.Unirest
 import org.apache.commons.logging.Log
 import org.apache.commons.logging.LogFactory
 import uk.co.rx14.jmclaunchlib.exceptions.ForbiddenOperationException
@@ -116,7 +116,7 @@ public class YggdrasilAuth {
 
 		def startTime = System.nanoTime()
 		HttpResponse<String> response =
-			Unirest.post("https://authserver.mojang.com/$path")
+				Unirest.post("https://authserver.mojang.com/$path")
 			       .header("Content-Type", "application/json")
 			       .body(jsonBody)
 			       .asString();

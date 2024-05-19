@@ -41,26 +41,34 @@ class MavenIdentifier {
 	static MavenIdentifier of(String identifier) {
 		String[] parts = identifier.split(":")
 
+		boolean isNative = identifier.contains("natives")
+
 		String group, artifact, version
 		def classifier = ""
 		def ext = "jar"
 
-		switch (parts.length) {
-			case 5:
-				classifier = parts[3]
-			case 4:
-				ext = parts[2]
-			case 3:
-				group = parts[0]
-				artifact = parts[1]
-				version = parts[parts.length - 1]
-				break
-			default:
-				def e = new IllegalArgumentException("Failed to parse Maven identifier $identifier: wrong length")
-				LOGGER.debug "", e
-				throw e
+		if (isNative) {
+			group = parts[0]
+			artifact = parts[1]
+			version = parts[2]
+			classifier = parts[3]
+		} else {
+			switch (parts.length) {
+				case 5:
+					classifier = parts[3]
+				case 4:
+					ext = parts[2]
+				case 3:
+					group = parts[0]
+					artifact = parts[1]
+					version = parts[parts.length - 1]
+					break
+				default:
+					def e = new IllegalArgumentException("Failed to parse Maven identifier $identifier: wrong length")
+					LOGGER.debug "", e
+					throw e
+			}
 		}
-
 		def mavenIdentifier = new MavenIdentifier(
 			group: group,
 			artifact: artifact,

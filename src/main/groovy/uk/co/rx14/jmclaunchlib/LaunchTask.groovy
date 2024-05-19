@@ -51,16 +51,16 @@ class LaunchTask implements Task {
 
 	@Override
 	void after() {
-		spec.launchArgs = getArgs(spec)
+		spec.launchArgs = getArgs(spec, version.getMinecraftArguments())
 
-		spec.jvmArgs = ["-Djava.library.path=${spec.nativesDirectory.toAbsolutePath()}".toString()]
+		spec.jvmArgs = ["-Djava.library.path=${spec.nativesDirectory.toAbsolutePath()}".toString()] + getArgs(spec, version.getJVMArguments())
 
 		spec.mainClass = version.mainClass
 	}
 
 	@CompileDynamic
-	private List<String> getArgs(LaunchSpec spec) {
-		def args = version.minecraftArguments.split(" ")
+	private List<String> getArgs(LaunchSpec spec, String argsText) {
+		def args = argsText.split(" ")
 
 		args = args.collect { String arg ->
 			arg.replace('${auth_player_name}', spec.auth.selectedProfile.name)

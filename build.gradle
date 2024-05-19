@@ -2,41 +2,41 @@ plugins {
 	id "groovy"
 	id "maven-publish"
 	id "jacoco"
-	id "com.jfrog.bintray" version "1.2"
-	id "net.researchgate.release" version "2.1.2"
 }
 
 repositories {
-	jcenter()
+    mavenCentral()
 }
 
 dependencies {
-	compile "org.codehaus.groovy:groovy:2.3.11:indy"
-	compile "org.codehaus.groovy:groovy-json:2.3.11:indy"
-	compile "org.codehaus.groovy:groovy-nio:2.3.11:indy"
-	compile "com.mashape.unirest:unirest-java:1.4.5"
-	compile "commons-codec:commons-codec:1.10"
-	compile "org.tukaani:xz:1.5"
-	compile "commons-io:commons-io:2.4"
-	compile "commons-logging:commons-logging:1.2"
+    implementation 'org.apache.groovy:groovy:4.0.21'
+    implementation 'org.apache.groovy:groovy-json:4.0.21'
+    implementation 'org.apache.groovy:groovy-nio:4.0.21'
+    implementation 'com.konghq:unirest-java:3.14.5'
+    implementation 'commons-codec:commons-codec:1.17.0'
+    implementation 'org.tukaani:xz:1.9'
+    implementation 'commons-io:commons-io:2.16.1'
+    implementation 'commons-logging:commons-logging:1.3.2'
 
-	testCompile "junit:junit:4.12"
-	testCompile "org.assertj:assertj-core:3.0.0"
+    testImplementation 'junit:junit:4.13.1'
+    testImplementation "org.assertj:assertj-core:3.0.0"
 }
 
 tasks.withType(GroovyCompile) {
     groovyOptions.optimizationOptions.indy = true
 }
 
-task sourcesJar(type: Jar, dependsOn: classes) {
-	classifier = "sources"
+task sourcesJar(type: Jar) {
+    dependsOn classes
+    archiveClassifier.set('sources')
 	from sourceSets.main.allSource
 }
 
 task javadocJar(type: Jar, dependsOn:javadoc) {
-     classifier = "javadoc"
-     from javadoc.destinationDir
+    archiveClassifier.set('javadoc')
+    from javadoc.destinationDir
 }
+
 artifacts {
 	archives sourcesJar
 	archives javadocJar
@@ -50,50 +50,5 @@ publishing {
 			artifact sourcesJar
 			artifact javadocJar
 		}
-	}
-}
-
-bintray {
-	publications = ["main"]
-	pkg {
-		repo = project.name
-		name = project.name
-		desc = "Launch Minecraft from the JVM. With a library."
-		licenses = ["MIT"]
-		vcsUrl = "https://github.com/RX14/jMinecraftLib"
-		issueTrackerUrl = "$vcsUrl/issues"
-		labels = ["minecraft", "groovy", "library", "launch"]
-		version {
-			name = project.version
-			released = new Date()
-			vcsTag = project.version
-		}
-	}
-}
-
-beforeReleaseBuild.dependsOn clean
-afterReleaseBuild.dependsOn bintrayUpload
-bintrayUpload.dependsOn "generatePomFileForMainPublication"
-bintrayUpload.dependsOn build
-
-jacocoTestReport {
-	reports {
-		xml.enabled = true
-		html.enabled = true
-	}
-}
-
-test {
-	forkEvery = 1
-	maxParallelForks = Runtime.getRuntime().availableProcessors();
-
-	testLogging {
-		exceptionFormat = "full"
-		showStandardStreams = true
-	}
-
-	beforeTest { descriptor ->
-		def classPadded = String.format("%-50s", descriptor.className)
-		logger.lifecycle("Running test ${classPadded} ${descriptor.name}()")
 	}
 }

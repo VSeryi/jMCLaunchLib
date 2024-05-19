@@ -2,13 +2,13 @@ package uk.co.rx14.jmclaunchlib.caches
 
 import groovy.transform.CompileStatic
 import groovy.transform.Immutable
+import groovy.transform.ImmutableOptions
 import groovy.transform.ToString
 import groovy.transform.TypeCheckingMode
+import kong.unirest.Unirest
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.logging.Log
 import org.apache.commons.logging.LogFactory
-import org.apache.http.client.methods.HttpGet
-import org.apache.http.impl.client.HttpClients
 import uk.co.rx14.jmclaunchlib.exceptions.OfflineException
 
 import java.nio.file.Files
@@ -23,11 +23,12 @@ import java.nio.file.Path
 @CompileStatic
 @ToString(includePackage = false, includeNames = true)
 @Immutable(knownImmutableClasses = [Path.class])
+@ImmutableOptions(knownImmutables=['storage'])
 class HashCache extends Cache {
 
 	private final static Log LOGGER = LogFactory.getLog(HashCache)
 
-	Path storage
+	final Path storage
 	boolean offline
 
 	/**
@@ -223,13 +224,14 @@ class HashCache extends Cache {
 	private byte[] _download(String hash, URL URL) {
 		if (offline) throw new OfflineException("[$storage] Can't download $URL")
 		LOGGER.info "Downloading $URL"
-		byte[] data = HttpClients.createDefault().execute(new HttpGet(URL.toURI())).entity.content.bytes
+		byte[] data = Unirest.get(URL.toString())
+				.header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3").asBytes().body
 
 		String downloadedHash = store(data)
 
-		if (!downloadedHash.equals(hash)) {
+		if (downloadedHash != hash) {
 			getPath(downloadedHash).toFile().delete()
-			throw new InvalidResponseException("$URL did not match hash \"$hash\"")
+			throw new InvalidResponseException("$URL did not match hash \"$hash\" but instead \"$downloadedHash\"")
 		}
 
 		data

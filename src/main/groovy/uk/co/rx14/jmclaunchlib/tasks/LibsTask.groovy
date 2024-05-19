@@ -12,7 +12,6 @@ import uk.co.rx14.jmclaunchlib.util.Task
 import uk.co.rx14.jmclaunchlib.version.Version
 
 import java.nio.file.Path
-import java.util.stream.Collectors
 
 class LibsTask implements Task {
 
@@ -63,41 +62,44 @@ class LibsTask implements Task {
 		@Override
 		void after() {
 			MavenIdentifier id = MavenIdentifier.of(lib.name)
-
-			String repo = lib.url ?: Constants.MinecraftLibsBase
-
-			//Hacks
-			switch (id.artifact) {
-				case "forge":
-					id = id.copyWith(classifier: "universal")
-					break
-				case "minecraftforge":
-					id = new MavenIdentifier(group: "net.minecraftforge", artifact: "forge", version: id.version, classifier: "universal")
-					break
-			}
-
-			Constants.XZLibs.each { XZGroup ->
-				if (id.group ==~ XZGroup) {
-					id = id.copyWith(ext: "jar.pack.xz")
-				}
-			}
-
-			if (lib.natives) {
-				lib.natives.each { Map.Entry entry ->
-					if (OS.fromString(entry.key) == OS.CURRENT) {
-						id = id.copyWith(classifier: entry.value.replace('${arch}', System.getProperty("sun.arch.data.model")))
-					}
-				}
-			}
-
-			//Calculate weight
 			if (!mavenCache.exists(id)) {
 				weight += 5
-				if (id.ext == "jar.pack.xz") weight += 10
 			}
-			if (lib.extract) weight += 5
+			def file;
+			if (lib.downloads?.artifact?.url) {
+				file = mavenCache.resolve(id, lib.downloads.artifact.url.toURL())
+			} else {
+				String repo = lib.url ?: Constants.MinecraftLibsBase
 
-			def file = mavenCache.resolve(id, repo)
+				//Hacks
+				switch (id.artifact) {
+					case "forge":
+						id = id.copyWith(classifier: "universal")
+						break
+					case "minecraftforge":
+						id = new MavenIdentifier(group: "net.minecraftforge", artifact: "forge", version: id.version, classifier: "universal")
+						break
+				}
+
+				Constants.XZLibs.each { XZGroup ->
+					if (id.group ==~ XZGroup) {
+						id = id.copyWith(ext: "jar.pack.xz")
+					}
+				}
+
+				if (lib.natives) {
+					lib.natives.each { Map.Entry entry ->
+						if (OS.fromString(entry.key) == OS.CURRENT) {
+							id = id.copyWith(classifier: entry.value.replace('${arch}', System.getProperty("sun.arch.data.model")))
+						}
+					}
+				}
+
+				file = mavenCache.resolve(id, repo)
+			}
+
+			if (id.ext == "jar.pack.xz") weight += 10
+			if (lib.extract) weight += 5
 
 			def jarFile = new File(file.path.replaceAll('\\.pack\\.xz$', ""))
 			if (file.name.endsWith(".pack.xz") && !jarFile.exists()) {

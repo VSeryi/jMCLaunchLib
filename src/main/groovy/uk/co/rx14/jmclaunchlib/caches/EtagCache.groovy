@@ -1,8 +1,8 @@
 package uk.co.rx14.jmclaunchlib.caches
 
-import com.mashape.unirest.http.Unirest
 import groovy.transform.Immutable
 import groovy.transform.ToString
+import kong.unirest.Unirest
 import org.apache.commons.logging.Log
 import org.apache.commons.logging.LogFactory
 import uk.co.rx14.jmclaunchlib.exceptions.OfflineException
@@ -16,7 +16,7 @@ class EtagCache extends Cache {
 
 	private final static Log LOGGER = LogFactory.getLog(EtagCache)
 
-	Path storage
+	final Path storage
 	boolean offline
 
 	String getLocalEtag(URL URL) {
@@ -55,7 +55,24 @@ class EtagCache extends Cache {
 		}
 
 		def startTime = System.nanoTime()
-		def response = request.asBinary()
+		int maxRetries = 5
+		int retryCount = 0
+		def response
+		long waitTime = 1000 // initial wait time in milliseconds
+
+		while (retryCount < maxRetries) {
+			try {
+				response = request.asBytes()
+				break
+			} catch (Exception e) {
+				retryCount++
+				if (retryCount == maxRetries) {
+					throw new Exception("Failed after " + maxRetries + " attempts", e)
+				}
+				Thread.sleep(waitTime)
+				waitTime *= 2 // double the wait time for the next iteration
+			}
+		}
 		def time = System.nanoTime() - startTime
 
 		if (response.status == 304) { //Return from cache
@@ -65,7 +82,7 @@ class EtagCache extends Cache {
 			LOGGER.debug "[$storage] $URL returned 200 in ${time / 1000000000}s: caching"
 			LOGGER.trace "[$storage] Etag was ${response.headers.getFirst("etag")}"
 			etagPath.text = response.headers.getFirst("etag")
-			filePath.bytes = response.body.bytes
+			filePath.bytes = response.body
 		} else {
 			LOGGER.warn "[$storage] $URL returned $response.status in ${time / 1000000000}s: error"
 			throw new HTTPException(response.status)
@@ -75,7 +92,7 @@ class EtagCache extends Cache {
 
 	Path getPath(URL URL) {
 		if (URL.file.endsWith("/")) return null
-		storage.resolve(URL.path.substring(URL.path.lastIndexOf("/") + 1))
+		storage.resolve(URL.path.substring(1).replace("/", "_"))
 	}
 
 	Path getEtagPath(URL URL) {

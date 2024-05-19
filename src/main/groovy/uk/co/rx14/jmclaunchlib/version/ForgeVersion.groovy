@@ -1,7 +1,6 @@
 package uk.co.rx14.jmclaunchlib.version
 
 import groovy.json.JsonSlurper
-import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.transform.Synchronized
 import org.apache.commons.logging.Log
@@ -11,61 +10,43 @@ import uk.co.rx14.jmclaunchlib.caches.MinecraftCaches
 import uk.co.rx14.jmclaunchlib.util.Compression
 
 @CompileStatic
-class ForgeVersion implements Version {
+class ForgeVersion extends Version {
 
 	private static final Log LOGGER = LogFactory.getLog(ForgeVersion)
 
-	final String MCVersion
-	final String uniqueVersion
-
 	final MinecraftCaches caches
-	private Map json
 
 	ForgeVersion(String MCVersion, String ForgeVersion, MinecraftCaches caches) {
-		this.MCVersion = MCVersion
+        super(MCVersion, caches.versions)
 		this.uniqueVersion = ForgeVersion
 		this.caches = caches
 	}
 
-	@Override
-	@CompileDynamic //Groovy bugs
-	List getLibs() {
-		ensureJson()
-		json.libraries.clone() as List
-	}
-
-	@Override
-	URL getJarDownloadUrl() {
-		"$Constants.MinecraftVersionsBase/$MCVersion/${MCVersion}.jar".toURL()
-	}
-
-	@Override
-	String getAssetsVersion() {
-		ensureJson()
-		json.assets
-	}
-
-	@Override
-	String getMinecraftArguments() {
-		ensureJson()
-		json.minecraftArguments
-	}
-
-	@Override
-	String getMainClass() {
-		ensureJson()
-		json.mainClass
-	}
-
 	@Synchronized
-	private ensureJson() {
-		if (json) return
+    protected ensureJson() {
+        if (uniqueJson) return
 
-		def data = Compression.extractZipSingleFile(
-			caches.libs.resolve("net.minecraftforge:forge:jar:universal:$uniqueVersion", "http://files.minecraftforge.net/maven/"),
-			"version.json"
-		)
+        def data
+        def paths = [
+                "net.minecraftforge:forge:jar:universal:$uniqueVersion",
+                "net.minecraftforge:forge:jar:installer:$uniqueVersion"
+        ]
 
-		this.json = Versions.applyParent(new JsonSlurper().parse(new String(data).chars) as Map, caches.versions)
-	}
+        paths.any { path ->
+            try {
+                def resolvedPath = caches.libs.resolve(path, "$Constants.MinecraftForgeBase")
+                data = Compression.extractZipSingleFile(resolvedPath, "version.json")
+                return true // Si se extrae con éxito, termina la iteración
+            } catch (Exception e) {
+            }
+        }
+
+        if (!data) {
+            throw "The $uniqueVersion version is not supported at the moment."
+        }
+
+
+        this.uniqueJson = Versions.applyParent(new JsonSlurper().parse(new String(data).replaceAll('\\.pack\\.xz$', "").replaceAll("http:", "https:").chars) as Map, caches.versions)
+    }
+
 }

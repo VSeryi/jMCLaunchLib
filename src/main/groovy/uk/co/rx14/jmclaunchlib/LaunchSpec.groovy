@@ -19,7 +19,7 @@ class LaunchSpec {
 
 	boolean netOffline
 
-	List<File> classpath = [].asSynchronized()
+	List<File> classpath = [].asSynchronized() as List<File>
 	List<String> launchArgs
 	List<String> jvmArgs
 	String mainClass
@@ -41,7 +41,7 @@ class LaunchSpec {
 	}
 
 	String[] getJavaCommandlineArray() {
-		[*jvmArgs, "-cp", classpathString, mainClass, *launchArgs].toArray()
+		[jvmArgs, "-cp", classpathString, mainClass, launchArgs].flatten().toArray() as String[]
 	}
 
 	String getJavaCommandline() {
@@ -50,6 +50,7 @@ class LaunchSpec {
 
 	@CompileDynamic
 	Process run(Path javaExecutable) {
+		getMinecraftDirectory().toFile().mkdirs()
 		[javaExecutable, *javaCommandlineArray].execute(null, getMinecraftDirectory().toFile())
 	}
 }

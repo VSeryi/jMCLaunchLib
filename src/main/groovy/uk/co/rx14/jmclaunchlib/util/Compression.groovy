@@ -80,7 +80,10 @@ class Compression {
 		try {
 			LOGGER.trace "Unpacking xz..."
 			IOUtils.copy(new XZInputStream(pack.newInputStream()), packFileStream)
-		} finally {
+		} catch (Exception e) {
+			e.printStackTrace()
+		}
+		finally {
 			packFileStream.close()
 		}
 

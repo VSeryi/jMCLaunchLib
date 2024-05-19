@@ -17,7 +17,7 @@ class Versions {
 			def parent = new MinecraftVersion(child.inheritsFrom, cache)
 			child.libraries.addAll(parent.libs)
 
-			parent.json + child
+			parent.uniqueJson + child
 		} else {
 			child
 		}
@@ -28,7 +28,7 @@ class Versions {
 	}
 
 	static List<String> minecraftVersions(EtagCache cache) {
-		def URL = "$Constants.MinecraftVersionsBase/versions.json".toURL()
+		def URL = "$Constants.MinecraftVersionsBase/mc/game/version_manifest.json".toURL()
 
 		byte[] data
 		if (cache) data = cache.get(URL) else data = URL.bytes

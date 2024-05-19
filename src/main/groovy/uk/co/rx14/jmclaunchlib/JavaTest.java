@@ -2,19 +2,17 @@ package uk.co.rx14.jmclaunchlib;
 
 import uk.co.rx14.jmclaunchlib.util.ChangePrinter;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.function.Supplier;
 
 public class JavaTest {
 	public static void main(String[] args) {
+		System.setProperty("org.apache.commons.logging.simplelog.defaultlog", "info");
 		final LaunchTask task = new LaunchTaskBuilder()
-			.setCachesDir("test/caches")
-			.setMinecraftVersion("1.7.10")
-//			.setForgeVersion()
-			.setInstanceDir("test/instance")
+				.setCachesDir("data")
+//			.setMinecraftVersion("1.7.10")
+				.setForgeVersion("1.7.10", "1.7.10-10.13.4.1614-1.7.10")
+				.setInstanceDir("minecraft")
 			.setUsername("RX14")
 			.setOffline()
 			.build();
@@ -28,12 +26,13 @@ public class JavaTest {
 
 		LaunchSpec spec = task.getSpec();
 
-		Process run = spec.run(new File("/usr/bin/java").toPath());
-
-		BufferedReader stdout = new BufferedReader(new InputStreamReader(run.getInputStream()));
-		String line = null;
+		//Process run = spec.run(new File("C:/Program Files/Java/jdk-21.0.2/bin/javaw.exe").toPath());
+		Process run = spec.run(new File("C:/Program Files/Java/jre1.8.0_341/bin/javaw.exe").toPath());
 		try {
-			while ((line = stdout.readLine()) != null) {
+			InputStream mergedStream = new SequenceInputStream(run.getInputStream(), run.getErrorStream());
+			BufferedReader reader = new BufferedReader(new InputStreamReader(mergedStream));
+			String line;
+			while ((line = reader.readLine()) != null) {
 				System.out.println(line);
 			}
 		} catch (IOException e) {

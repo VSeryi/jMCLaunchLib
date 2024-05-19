@@ -29,7 +29,7 @@ class AssetsTask implements Task {
 	void before() {
 		if (version.assetsVersion) {
 			def index = new JsonSlurper().parseText(
-				new String(cache.indexes.get("$Constants.MinecraftIndexesBase/${version.assetsVersion}.json".toURL()))
+                    new String(cache.indexes.get(version.getAssetsUrl()))
 			)
 
 			index.objects.each {
